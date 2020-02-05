@@ -1,0 +1,23 @@
+version: '3.7'
+
+services:
+  open-ca-core:
+    image: fabric-openca-core
+    container_name: fabric-openca-core
+    # entrypoint: /bin/sh -c "chown -v fabric:fabric /etc/hyperledger && fabric-ca-server start -b admin:admin"
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_ADMIN_CREDENTIALS=admin:admin
+    volumes:
+      - type: volume
+        source: fanbric-openca-core-volume
+        target: /etc/hyperledger/fabric-ca-server
+        consistency: delegated
+# # ./volumes/fabric-ca-server:/etc/hyperledger/fabric-ca-server:delegated
+
+volumes:
+  fanbric-openca-core-volume:
+    driver_opts:
+      type: 'nfs'
+      device: '/home/mad/geodb/fabric-open-ca/volumes/fabric-ca-server'
+      o: 'bind'

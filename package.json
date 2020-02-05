@@ -1,0 +1,15 @@
+{
+  "name": "fabric-open-ca",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "docker-build": "cd ./scripts && ./docker-build.sh && cd -",
+    "start": "cd ./scripts && ./docker-build.sh && cd - && docker-compose up",
+    "reset": "cd ./scripts && ./reset.sh && cd -",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
