@@ -5,11 +5,20 @@
   "main": "index.js",
   "scripts": {
     "docker-build": "cd ./scripts && ./docker-build.sh && cd -",
-    "start": "cd ./scripts && ./docker-build.sh && cd - && docker-compose up",
+    "start": "docker-compose up -d",
     "reset": "cd ./scripts && ./reset.sh && cd -",
+    "dev": "gulp watch",
+    "next": "cd ./app && npm run dev",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "ansicolor": "^1.1.93",
+    "fs-extra": "^8.1.0",
+    "gulp": "^4.0.2",
+    "gulp-watch": "^5.0.1",
+    "ololog": "^1.1.151"
+  }
 }
