@@ -10,13 +10,13 @@ services:
       - FABRIC_CA_ADMIN_CREDENTIALS=admin:admin
     volumes:
       - type: volume
-        source: fanbric-openca-core-volume
+        source: fabric-openca-core-volume
         target: /etc/hyperledger/fabric-ca-server
         consistency: delegated
 # # ./volumes/fabric-ca-server:/etc/hyperledger/fabric-ca-server:delegated
 
 volumes:
-  fanbric-openca-core-volume:
+  fabric-openca-core-volume:
     driver_opts:
       type: 'nfs'
       device: '/home/mad/geodb/fabric-open-ca/volumes/fabric-ca-server'
