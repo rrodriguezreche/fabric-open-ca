@@ -14,24 +14,32 @@ const log = require('ololog').configure({
   locate: false
 });
 
-const ERROR = '[ERROR]'.red;
-const WARNING = '[WARNING]'.orange;
+const ERROR = '[ERRO]'.red;
+const WARNING = '[WARN]'.yellow;
 const INFO = '[INFO]'.cyan;
+
+let nextJsProcess = undefined;
 
 gulp.task('default', async () => {
   console.log('Options: ', 'test');
 });
 
 gulp.task('watch', async cb => {
-  await reset();
-  await build();
-  start();
-  runNextJs();
+  reset()
+    .then(build)
+    .then(start)
+    .catch(error => log(ERROR, error))
+    .finally(() => {
+      watch([path.resolve(`${process.cwd()}/ca/*`)], cb => {
+        reset()
+          .then(build)
+          .then(start);
+      });
+    });
 
-  watch([path.resolve(`${process.cwd()}/ca/*`)], cb => {
-    reset()
-      .then(build)
-      .then(start);
+  runNextJs();
+  watch([path.resolve(`${process.cwd()}/app/src/api/*`)], cb => {
+    runNextJs();
   });
 
   //   watch([`./contracts/**/${contractToTest}.sol`], cb => {
@@ -97,17 +105,18 @@ const start = cb => {
 const runNextJs = () => {
   log(INFO, 'Starting NextJS');
 
-  return new Promise((resolve, reject) => {
-    const cmd = spawn('npm', ['run', 'next']).on('error', error => {
-      log(ERROR, error);
-      resolve();
-    });
-    cmd.stdout.on(
-      'data',
-      data => log(INFO, `${data}`) /*process.stdout.write(`${data}`)*/
-    );
-    cmd.stderr.on('data', data => log(ERROR, `${data}`));
-    cmd.on('close', resolve);
+  nextJsProcess = spawn('npm', ['run', 'dev'], {
+    cwd: `${path.resolve(process.cwd())}/app`
+  }).on('error', error => {
+    log(ERROR, error);
+  });
+  nextJsProcess.stdout.on(
+    'data',
+    data => log(INFO, `${data}`) /*process.stdout.write(`${data}`)*/
+  );
+  nextJsProcess.stderr.on('data', data => log(ERROR, `${data}`));
+  nextJsProcess.on('close', () => {
+    log(WARNING, 'NextJs closed');
   });
 };
 

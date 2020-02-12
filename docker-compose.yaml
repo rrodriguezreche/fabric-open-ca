@@ -13,6 +13,8 @@ services:
         source: fabric-openca-core-volume
         target: /etc/hyperledger/fabric-ca-server
         consistency: delegated
+    ports:
+      - 7054:7054
 # # ./volumes/fabric-ca-server:/etc/hyperledger/fabric-ca-server:delegated
 
 volumes:

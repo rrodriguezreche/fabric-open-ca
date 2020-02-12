@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "node ./src/server/server.js",
+    "dev": "nodemon --config nodemon.json ./src/server/server.js",
     "build": "next build ./src",
     "start": "NODE_ENV=production node ./src/server/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -32,5 +32,8 @@
     "react-dom": "^16.12.0",
     "styled-components": "^5.0.0",
     "uid-safe": "^2.1.5"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.2"
   }
 }

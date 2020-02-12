@@ -9,6 +9,7 @@
     "reset": "cd ./scripts && ./reset.sh && cd -",
     "dev": "gulp watch",
     "next": "cd ./app && npm run dev",
+    "killnext": "kill $(lsof -t -i:3000) | exit 0",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
