@@ -3,3 +3,5 @@ node_modules
 # Ignore files at volumes/fabric-ca-server except for .gitkeep
 volumes/fabric-ca-server/*
 !volumes/fabric-ca-server/.gitkeep
+.env
+ca/fabric-ca-server-config.yaml

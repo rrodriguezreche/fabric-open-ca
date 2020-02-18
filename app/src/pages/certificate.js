@@ -3,25 +3,53 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Card from 'react-bootstrap/Card';
-import Button from 'react-bootstrap/Button';
+import LoadingButton from '../components/LoadingButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import fetch from 'isomorphic-fetch';
 
 export default function Certificate() {
   const [certificate, setCertificate] = useState('');
+  const [register, setRegister] = useState({ registering: false, file: null });
 
   if (!certificate) {
     fetch('http://localhost:3000/api/register')
       .then(res => {
-        if (res && res.json) {
+        if (res && res.status === 200 && res.json) {
           return res.json();
-        } else {
-          console.log('Nope!');
         }
       })
-      .then(result => setCertificate(JSON.stringify(result)))
-      .catch(console.error);
+      .then(result => {
+        setCertificate(JSON.stringify(result));
+      })
+      .catch(error => {
+        console.error(error);
+      });
   }
+
+  const postRegistration = event => {
+    event.preventDefault();
+    setRegister({ registering: true, file: null });
+
+    let result = null;
+
+    fetch('http://localhost:3000/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+      .then(async res => {
+        result = res && res.json ? await res.json() : null;
+
+        console.log(result);
+        if (result.status === 'OK') {
+          console.log(`Enrollment secret: ${result.payload}`);
+          return result.payload;
+        } else {
+          throw new Error(result.err);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setRegister({ registering: false, file: result }));
+  };
 
   return (
     <Container>
@@ -48,8 +76,15 @@ export default function Certificate() {
             <Card.Header>Actions</Card.Header>
             <Card.Body>
               <Card.Text>
-                Some quick example text to build on the card title and make up
-                the bulk of the card's content.
+                <LoadingButton
+                  block
+                  size="lg"
+                  variant="danger"
+                  onClick={postRegistration}
+                  loading={register.registering}
+                >
+                  Register
+                </LoadingButton>
               </Card.Text>
             </Card.Body>
           </Card>

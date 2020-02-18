@@ -3,8 +3,10 @@ source ./utils.sh
 
 build(){
     printSection "Creating docker images"
-    docker build -t fabric-openca-core ../ca
+    cd ../ca
+    docker build -t fabric-openca-core ./
     checkFatalError $?
+    cd -
 }
 
 build

@@ -6,7 +6,7 @@ const router = express.Router();
 router.get(
   '/login',
   passport.authenticate('google', {
-    scope: ['profile']
+    scope: ['profile', 'email']
   }),
   (req, res) => {
     res.redirect('/');

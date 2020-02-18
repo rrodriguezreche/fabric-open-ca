@@ -4,10 +4,8 @@ services:
   open-ca-core:
     image: fabric-openca-core
     container_name: fabric-openca-core
-    # entrypoint: /bin/sh -c "chown -v fabric:fabric /etc/hyperledger && fabric-ca-server start -b admin:admin"
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
-      - FABRIC_CA_ADMIN_CREDENTIALS=admin:admin
     volumes:
       - type: volume
         source: fabric-openca-core-volume
@@ -15,11 +13,13 @@ services:
         consistency: delegated
     ports:
       - 7054:7054
+    env_file:
+      - ./.env
 # # ./volumes/fabric-ca-server:/etc/hyperledger/fabric-ca-server:delegated
 
 volumes:
   fabric-openca-core-volume:
     driver_opts:
       type: 'nfs'
-      device: '/home/mad/geodb/fabric-open-ca/volumes/fabric-ca-server'
+      device: '${FABRIC_OPENCA_PATH}/volumes/fabric-ca-server'
       o: 'bind'
