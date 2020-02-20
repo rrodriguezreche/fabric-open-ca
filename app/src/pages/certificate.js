@@ -3,16 +3,22 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Card from 'react-bootstrap/Card';
+import Image from 'react-bootstrap/Image';
 import LoadingButton from '../components/LoadingButton';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import fetch from 'isomorphic-fetch';
+import { KEYUTIL, asn1 } from 'jsrsasign';
 
-export default function Certificate() {
+export default function Certificate({
+  userEmail = 'Unknown',
+  userName = 'Unknown',
+  userPicture = false
+}) {
   const [certificate, setCertificate] = useState('');
   const [register, setRegister] = useState({ registering: false, file: null });
 
   if (!certificate) {
-    fetch('http://localhost:3000/api/register')
+    fetch('http://localhost:3000/api/getCertificates')
       .then(res => {
         if (res && res.status === 200 && res.json) {
           return res.json();
@@ -28,23 +34,41 @@ export default function Certificate() {
 
   const postRegistration = event => {
     event.preventDefault();
+
+    const { prvKeyObj, pubKeyObj } = KEYUTIL.generateKeypair('EC', 'secp256r1');
+
+    const csr = asn1.csr.CSRUtil.newCSRPEM({
+      subject: { str: asn1.x509.X500Name.ldapToOneline(`CN=${userEmail}`) },
+      sbjpubkey: pubKeyObj,
+      sigalg: 'SHA256withECDSA',
+      sbjprvkey: prvKeyObj
+    });
+
     setRegister({ registering: true, file: null });
 
     let result = null;
 
-    fetch('http://localhost:3000/api/register', {
+    fetch('http://localhost:3000/api/enroll', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ csr })
     })
       .then(async res => {
         result = res && res.json ? await res.json() : null;
 
-        console.log(result);
-        if (result.status === 'OK') {
-          console.log(`Enrollment secret: ${result.payload}`);
+        if (result.status === 'OK' && result.payload) {
+          console.log(result.payload);
           return result.payload;
         } else {
-          throw new Error(result.err);
+          throw new Error(
+            result.err
+              ? result.error
+              : `${
+                  result.status !== 'OK'
+                    ? 'Status is not OK'
+                    : 'Returned payload is empty'
+                }`
+          );
         }
       })
       .catch(console.error)
@@ -63,11 +87,6 @@ export default function Certificate() {
             <Card.Body>
               <Card.Text>{certificate || 'No certificate found'}</Card.Text>
             </Card.Body>
-            {/* <Card.Footer>
-              <Button variant="primary" onClick={() => setCertificate('yeee')}>
-                Check
-              </Button>
-            </Card.Footer> */}
           </Card>
         </Col>
 
@@ -75,6 +94,16 @@ export default function Certificate() {
           <Card border="primary">
             <Card.Header>Actions</Card.Header>
             <Card.Body>
+              <Card.Title>
+                <Row>
+                  <Col xs={4}>
+                    <Image src={userPicture} roundedCircle fluid />
+                  </Col>
+                  <Col xs={8} className="align-self-center">
+                    {userName} - <small>{userEmail}</small>
+                  </Col>
+                </Row>
+              </Card.Title>
               <Card.Text>
                 <LoadingButton
                   block
@@ -94,12 +123,10 @@ export default function Certificate() {
   );
 }
 
-// Certificate.getInitialProps = async ({ req }) => {
-//   const baseURL = req ? `${req.protocol}://${req.get('Host')}` : '';
-//   const res = await fetch(`${baseURL}/api/register`);
-
-//   return {
-//     certificate: res.status === 200 && (await res.json()),
-//     error: res.status != 200
-//   };
-// };
+Certificate.getInitialProps = async ({ req }) => {
+  return {
+    userName: req.user._json.name,
+    userEmail: req.user._json.email,
+    userPicture: req.user._json.picture
+  };
+};

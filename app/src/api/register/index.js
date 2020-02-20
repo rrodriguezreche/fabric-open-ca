@@ -2,43 +2,55 @@ const bodyParser = require('body-parser');
 const express = require('express');
 const path = require('path');
 const fs = require('fs-extra');
-const { ensureAuthenticated, ensureCaClient } = require('./hooks');
+const {
+  ensureAuthenticated,
+  ensureCaClient,
+  deleteUserIfRegistered
+} = require('./hooks');
 const { User } = require('fabric-client');
 
 const router = express.Router();
 
 router.use(bodyParser.json());
 
-router.get('/api/register', ensureAuthenticated, ensureCaClient, (req, res) => {
-  res.json({ great: true });
-  // res.send({ great: true });
-});
-
-router.post(
-  '/api/register',
+router.get(
+  '/api/getCertificates',
   ensureAuthenticated,
   ensureCaClient,
   (req, res) => {
     let payload, err;
 
-    let enrollmentID = undefined;
-
-    for (email of req.user.emails) {
-      if (email.value && email.verified) {
-        enrollmentID = email.value;
-      }
-      break;
-    }
-
-    if (!enrollmentID) {
-      err = 'Cannot find a verified user email';
-      res.json({
-        status: 'NOK',
-        payload,
-        err
+    req.ca.client
+      .newCertificateService()
+      .getCertificates(
+        { id: req.usermail, ca: process.env.FABRIC_CA_NAME },
+        req.ca.registrar
+      )
+      .then(response => {
+        payload = response;
+      })
+      .catch(error => (err = error))
+      .finally(() => {
+        const response = {
+          status: payload && !err ? 'OK' : 'NOK',
+          payload,
+          err: err ? err.toString() : ''
+        };
+        res.json(response);
       });
-      return;
-    }
+  }
+);
+
+router.post(
+  '/api/enroll',
+  ensureAuthenticated,
+  ensureCaClient,
+  deleteUserIfRegistered,
+  (req, res) => {
+    const { csr } = req.body;
+
+    let payload, err;
+    let enrollmentID = req.usermail;
 
     req.ca.client
       .register(
@@ -49,7 +61,20 @@ router.post(
         },
         req.ca.registrar
       )
-      .then(enrollmentSecret => (payload = enrollmentSecret))
+      .then(enrollmentSecret => {
+        if (enrollmentSecret) {
+          return req.ca.client.enroll({ enrollmentID, enrollmentSecret, csr });
+        } else {
+          throw new Error(`Could not obtain an enrollment secret from CA`);
+        }
+      })
+      .then(enrollResponse => {
+        if (enrollResponse.certificate && enrollResponse.rootCertificate) {
+          payload = enrollResponse;
+        } else {
+          throw new Error(`Could not obtain certificate and root certificate`);
+        }
+      })
       .catch(error => {
         console.error(error);
         err = error;
@@ -65,31 +90,33 @@ router.post(
   }
 );
 
-router.get('/api/test', (req, res) => {
-  req.ca.client
-    .newIdentityService()
-    .getOne('blabla@blabla.com', req.ca.registrar)
-    .then(response => {
-      console.log('getOne()');
-      console.log(response);
-    })
-    .catch(error => {
-      console.log('Error');
-      console.error(error);
-    });
+// router.post('/api/test', (req, res) => {
+//   const { enrollmentID } = req.body;
 
-  req.ca.client
-    .newIdentityService()
-    .getAll(req.ca.registrar)
-    .then(response => {
-      console.log('getAll()');
-      console.log(response);
-    })
-    .catch(error => {
-      console.log('Error');
-      console.error(error);
-    });
-  res.json({ status: 'OK' });
-});
+//   let payload, err;
+
+//   req.ca.client
+//     .register(
+//       {
+//         enrollmentID,
+//         affiliation: process.env.FABRIC_CA_USERS_AFFILIATION,
+//         maxEnrollments: -1
+//       },
+//       req.ca.registrar
+//     )
+//     .then(enrollmentSecret => (payload = { enrollmentID, enrollmentSecret }))
+//     .catch(error => {
+//       console.error(error);
+//       err = error;
+//     })
+//     .finally(() => {
+//       const response = {
+//         status: payload && !err ? 'OK' : 'NOK',
+//         payload,
+//         err: err ? err.toString() : ''
+//       };
+//       res.json(response);
+//     });
+// });
 
 module.exports = router;

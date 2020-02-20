@@ -36,7 +36,11 @@ async function getCaClient(url) {
 
         childProcess.on('exit', code => {
           if (code === 0) {
-            const caClient = new FabricCAServices(_url, {}, 'fabric-openca');
+            const caClient = new FabricCAServices(
+              _url,
+              {},
+              process.env.FABRIC_CA_NAME
+            );
             resolve(caClient);
           } else {
             setTimeout(() => {

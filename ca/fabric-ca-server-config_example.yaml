@@ -44,7 +44,7 @@ port: 7054
 
 # Cross-Origin Resource Sharing (CORS)
 cors:
-  enabled: false
+  enabled: true
   origins:
     - '*'
 
@@ -449,6 +449,7 @@ intermediate:
 cfg:
   identities:
     passwordattempts: 10
+    allowremove: true
 
 ###############################################################################
 #
