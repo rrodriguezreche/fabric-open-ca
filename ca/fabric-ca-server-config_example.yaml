@@ -66,7 +66,7 @@ crlsizelimit: 512000
 #############################################################################
 tls:
   # Enable TLS (default: false)
-  enabled: false
+  enabled: true
   # TLS for the server's listening port
   certfile:
   keyfile:
@@ -320,6 +320,7 @@ csr:
   hosts:
     - 26ed7081307f
     - localhost
+    - fabric-openca-core
   ca:
     expiry: 131400h
     pathlength: 1

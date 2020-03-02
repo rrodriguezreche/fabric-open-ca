@@ -23,7 +23,7 @@ router.get(
     req.ca.client
       .newCertificateService()
       .getCertificates(
-        { id: req.usermail, ca: process.env.FABRIC_CA_NAME },
+        { id: req.usermail, ca: process.env.FABRIC_CA_NAME, notrevoked: true },
         req.ca.registrar
       )
       .then(response => {
@@ -37,6 +37,44 @@ router.get(
           err: err ? err.toString() : ''
         };
         res.json(response);
+      });
+  }
+);
+
+router.get(
+  '/api/downloadCertificates',
+  ensureAuthenticated,
+  ensureCaClient,
+  (req, res) => {
+    let payload, err;
+
+    req.ca.client
+      .newCertificateService()
+      .getCertificates(
+        { id: req.usermail, ca: process.env.FABRIC_CA_NAME, notrevoked: true },
+        req.ca.registrar
+      )
+      .then(response => {
+        if (
+          response &&
+          response.result &&
+          response.result.certs &&
+          response.result.certs.length > 0 &&
+          response.result.certs[0].PEM
+        ) {
+          let filePath = `/tmp/${req.usermail}.pem`;
+          fs.writeFileSync(filePath, response.result.certs[0].PEM);
+          res.download(filePath, error => {
+            if (error) throw new Error(err);
+            fs.unlink(filePath);
+          });
+        } else {
+          throw new Error('Certificate not found');
+        }
+      })
+      .catch(error => {
+        console.error(error);
+        res.sendStatus(404);
       });
   }
 );
@@ -90,33 +128,14 @@ router.post(
   }
 );
 
-// router.post('/api/test', (req, res) => {
-//   const { enrollmentID } = req.body;
-
-//   let payload, err;
-
-//   req.ca.client
-//     .register(
-//       {
-//         enrollmentID,
-//         affiliation: process.env.FABRIC_CA_USERS_AFFILIATION,
-//         maxEnrollments: -1
-//       },
-//       req.ca.registrar
-//     )
-//     .then(enrollmentSecret => (payload = { enrollmentID, enrollmentSecret }))
-//     .catch(error => {
-//       console.error(error);
-//       err = error;
-//     })
-//     .finally(() => {
-//       const response = {
-//         status: payload && !err ? 'OK' : 'NOK',
-//         payload,
-//         err: err ? err.toString() : ''
-//       };
-//       res.json(response);
-//     });
-// });
+router.post('/api/test', (req, res) => {
+  req.ca.client
+    .revoke({ enrollmentID: 'rafael@geodb.com' }, req.ca.registrar)
+    .then(response => {
+      console.log(response.result.RevokedCerts);
+    })
+    .catch(console.error)
+    .finally(() => res.json({ status: 'OK' }));
+});
 
 module.exports = router;

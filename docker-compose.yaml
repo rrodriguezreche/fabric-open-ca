@@ -4,6 +4,7 @@ services:
   open-ca-core:
     image: fabric-openca-core
     container_name: fabric-openca-core
+    hostname: fabric-openca-core
     environment:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
     volumes:
@@ -11,11 +12,25 @@ services:
         source: fabric-openca-core-volume
         target: /etc/hyperledger/fabric-ca-server
         consistency: delegated
+    # ./volumes/fabric-ca-server:/etc/hyperledger/fabric-ca-server:delegated
     ports:
       - 7054:7054
     env_file:
       - ./.env
-# # ./volumes/fabric-ca-server:/etc/hyperledger/fabric-ca-server:delegated
+
+  open-ca-registrar:
+    image: fabric-openca-registrar
+    container_name: fabric-openca-registrar
+    hostname: fabric-openca-registrar
+    ports:
+      - 3000:3000
+    volumes:
+      - ./app/src:/usr/app/src:cached
+      - ${FABRIC_OPENCA_PATH}/volumes/fabric-ca-server:/usr/app/.etc/fabric-ca-server
+    env_file:
+      - ./app/.env
+    depends_on:
+      - open-ca-core
 
 volumes:
   fabric-openca-core-volume:

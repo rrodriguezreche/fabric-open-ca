@@ -4,9 +4,13 @@ import Jumbotron from 'react-bootstrap/Jumbotron';
 
 import { library } from '@fortawesome/fontawesome-svg-core';
 
-import { faAddressCard } from '@fortawesome/free-solid-svg-icons';
+import {
+  faAddressCard,
+  faFileDownload
+} from '@fortawesome/free-solid-svg-icons';
 
 library.add(faAddressCard);
+library.add(faFileDownload);
 
 class MyApp extends App {
   render() {

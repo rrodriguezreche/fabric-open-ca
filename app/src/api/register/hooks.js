@@ -31,11 +31,20 @@ const deleteUserIfRegistered = (req, res, next) => {
         response.result.id &&
         response.result.id === req.usermail
       ) {
-        return identityService.delete(req.usermail, req.ca.registrar);
+        return Promise.all([
+          identityService.delete(req.usermail, req.ca.registrar)
+          // req.ca.client.revoke({ enrollmentID: req.usermail }, req.ca.registrar)
+        ]);
       }
     })
+    .then(() => {
+      console.log(`Succesfully unregistered ${req.usermail}`);
+    })
     .catch(error => {
-      if (error.toString().includes(`"code":63`)) {
+      if (
+        error.toString().includes(`"code":63`) ||
+        error.toString().includes(`"code":10`)
+      ) {
         console.log(`${req.usermail} is not registered`);
       } else {
         console.error(error);

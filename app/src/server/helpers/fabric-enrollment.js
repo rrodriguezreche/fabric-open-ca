@@ -8,6 +8,10 @@ const KEYSTORE_PATH =
   process.env.FABRIC_OPENCA_MASTER_KEYSTORE_PATH ||
   path.resolve(`${process.cwd()}/.etc/keystore.json`);
 
+const CA_TLS_CERT_PATH =
+  process.env.FABRIC_OPENCA_MASTER_KEYSTORE_PATH ||
+  path.resolve(`${process.cwd()}/.etc/fabric-ca-server/ca-cert.pem`);
+
 const CERTIFICATE_PATH =
   process.env.FABRIC_OPENCA_MASTER_CERTIFICATE ||
   path.resolve(`${process.cwd()}/.etc/certificate`);
@@ -21,42 +25,15 @@ async function getCaClient(url) {
     url && typeof url == 'string'
       ? url
       : process.env.FABRIC_OPENCA_SERVER_URL || 'http://localhost:7054';
-  let count = 0;
   let caClient = undefined;
 
-  while (!caClient && count < 10) {
-    caClient = await new Promise(async (resolve, reject) => {
-      try {
-        const [host, port] = _url
-          .replace('http://', '')
-          .replace('https://', '')
-          .split(':');
+  const trustedRoots = [fs.readFileSync(CA_TLS_CERT_PATH)];
 
-        const childProcess = await exec(`nc -zv ${host} ${port}`);
-
-        childProcess.on('exit', code => {
-          if (code === 0) {
-            const caClient = new FabricCAServices(
-              _url,
-              {},
-              process.env.FABRIC_CA_NAME
-            );
-            resolve(caClient);
-          } else {
-            setTimeout(() => {
-              resolve(undefined);
-              count++;
-            }, 3000);
-          }
-        });
-      } catch (error) {
-        setTimeout(() => {
-          resolve(undefined);
-          count++;
-        }, 3000);
-      }
-    });
-  }
+  caClient = new FabricCAServices(
+    _url,
+    { trustedRoots, verify: true },
+    process.env.FABRIC_CA_NAME
+  );
 
   if (!caClient) {
     console.warn(

@@ -5,6 +5,7 @@ import Col from 'react-bootstrap/Col';
 import Card from 'react-bootstrap/Card';
 import Image from 'react-bootstrap/Image';
 import LoadingButton from '../components/LoadingButton';
+import CertificateContainer from '../components/CertificateContainer';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import fetch from 'isomorphic-fetch';
 import { KEYUTIL, asn1 } from 'jsrsasign';
@@ -15,7 +16,7 @@ export default function Certificate({
   userPicture = false
 }) {
   const [certificate, setCertificate] = useState('');
-  const [register, setRegister] = useState({ registering: false, file: null });
+  const [register, setRegister] = useState({ registering: false });
 
   if (!certificate) {
     fetch('http://localhost:3000/api/getCertificates')
@@ -24,8 +25,16 @@ export default function Certificate({
           return res.json();
         }
       })
-      .then(result => {
-        setCertificate(JSON.stringify(result));
+      .then(json => {
+        if (
+          json &&
+          json.payload &&
+          json.payload.result &&
+          json.payload.result.certs &&
+          json.payload.result.certs.length > 0
+        ) {
+          setCertificate(json.payload.result.certs[0].PEM);
+        }
       })
       .catch(error => {
         console.error(error);
@@ -44,7 +53,7 @@ export default function Certificate({
       sbjprvkey: prvKeyObj
     });
 
-    setRegister({ registering: true, file: null });
+    setRegister({ registering: true });
 
     let result = null;
 
@@ -57,8 +66,7 @@ export default function Certificate({
         result = res && res.json ? await res.json() : null;
 
         if (result.status === 'OK' && result.payload) {
-          console.log(result.payload);
-          return result.payload;
+          setCertificate(result.payload.certificate);
         } else {
           throw new Error(
             result.err
@@ -72,7 +80,9 @@ export default function Certificate({
         }
       })
       .catch(console.error)
-      .finally(() => setRegister({ registering: false, file: result }));
+      .finally(() => {
+        setRegister({ registering: false });
+      });
   };
 
   return (
@@ -85,7 +95,8 @@ export default function Certificate({
               <span> Your certificate</span>
             </Card.Header>
             <Card.Body>
-              <Card.Text>{certificate || 'No certificate found'}</Card.Text>
+              {<CertificateContainer certificate={certificate} /> ||
+                'No certificate found'}
             </Card.Body>
           </Card>
         </Col>
